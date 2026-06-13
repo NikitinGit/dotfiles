@@ -21,13 +21,4 @@
         eclipse-mat
       ];
     };
-
-  darwinModule =
-    { ... }:
-    {
-      homebrew.casks = [
-        "jdk-mission-control"
-        "memoryanalyzer"
-      ];
-    };
 }

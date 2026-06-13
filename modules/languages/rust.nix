@@ -9,7 +9,6 @@
         rustfmt
         clippy
         rust-analyzer
-        rustlings
       ];
     };
 }

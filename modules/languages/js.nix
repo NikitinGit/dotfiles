@@ -11,7 +11,7 @@
           nodejs_24
           typescript-language-server
         ]
-        ++ (with pkgs.nodePackages; [
+        ++ (with pkgs; [
           npm-check-updates
           tsx
         ]);

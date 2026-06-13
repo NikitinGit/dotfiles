@@ -1,55 +1,46 @@
 { modules }:
 
 {
-  host = "dfjay-desktop";
+  host = "igor-desktop";
   system = "x86_64-linux";
-  user = "dfjay";
-  useremail = "mail@dfjay.com";
-  userdesc = "Pavel Yozhikov";
+  user = "igor";
+  useremail = "andnikitn5@gmail.com";
+  userdesc = "Igor Nikitin";
 
-  nixosStateVersion = "25.11";
+  nixosStateVersion = "25.05";
   homeStateVersion = "26.05";
 
   modules = with modules; [
     audio
     bluetooth
-    de.cosmic
+    de.gnome
     games
     locale
     shell.zsh
-    sops
     stylix
 
     claude
     bat
     btop
-    direnv
     docker
     eza
-    fastfetch
+    firefox
     fd
-    ghostty
     git
-    gpg
-    gradle
     helix
     k8s
     lazydocker
     lazygit
-    librewolf
     neovim
-    netrc
     nix-index
+    nvidia
     postgresql
     ripgrep
     skim
     starship
     tealdeer
-    translateshell
-    vscode
     yazi
     zed
-    zoxide
     zsh
 
     languages.go
@@ -63,7 +54,7 @@
   config =
     {
       pkgs,
-      lib,
+      inputs,
       hostname,
       username,
       userdesc,
@@ -71,16 +62,17 @@
     }:
     {
       imports = [
-        ./hardware-configuration.nix
+        inputs.nixos-facter-modules.nixosModules.facter
+        ./storage.nix
       ];
+
+      facter.reportPath = ./facter.json;
 
       security.sudo.enable = false;
       security.sudo-rs = {
         enable = true;
         execWheelOnly = false;
       };
-
-      virtualisation.podman.enable = true;
 
       programs.coolercontrol.enable = true;
 
@@ -94,7 +86,7 @@
       services.printing.enable = true;
 
       hardware = {
-        cpu.amd.updateMicrocode = true;
+        cpu.intel.updateMicrocode = true;
         graphics = {
           enable = true;
           enable32Bit = true;
@@ -106,42 +98,28 @@
         networkmanager.enable = true;
         firewall.enable = false;
       };
+      
+      networking.extraHosts =
+      ''
+        127.0.0.1 local.strikerstat-stage.twc1.net
+        127.0.0.1 local.strikerstat-preprod.twc1.net
+      '';
 
       boot = {
         loader = {
-          systemd-boot.enable = lib.mkForce false;
+          systemd-boot.enable = true;
           efi.canTouchEfiVariables = true;
-        };
-        lanzaboote = {
-          enable = true;
-          pkiBundle = "/var/lib/sbctl";
-          autoGenerateKeys.enable = true;
-          autoEnrollKeys = {
-            enable = true;
-            autoReboot = true;
-          };
         };
         initrd.systemd.enable = true;
         kernelPackages = pkgs.linuxPackages_zen;
+        kernel.sysctl."kernel.sysrq" = 1;
       };
 
       home-manager.users.${username} = {
-        sops.age.keyFile = "/home/${username}/.config/sops/age/keys.txt";
         services.gpg-agent.pinentry.package = pkgs.pinentry-gnome3;
-        services.gpg-agent.sshKeys = [
-          "FB20142EEBEAA96FD7F688382F5E558BA4A23694" # YubiKey auth subkey
-        ];
-        programs.git.settings = {
-          commit.gpgSign = true;
-          tag.gpgSign = true;
-          user.signingKey = "577260D68251AC22";
-        };
-        programs.git.includes = [
-          {
-            path = "~/spectrum/.gitconfig";
-            condition = "gitdir:~/spectrum/";
-          }
-        ];
+
+        xdg.configFile."autostart/org.coolercontrol.CoolerControl.desktop".source =
+          "${pkgs.coolercontrol.coolercontrol-gui}/share/applications/org.coolercontrol.CoolerControl.desktop";
       };
 
       users = {
@@ -155,7 +133,7 @@
             "wheel"
             "docker"
           ];
-          hashedPassword = "$6$J91OG.NW1Dz35n2S$L8pwihewop1tEe.x6YbjYIHRgyyax9E.q.mu/HL49xZkJEVD8DzKn.9s2rWJLWrJuL1WdpJ9NzymWQvJMBro8.";
+          hashedPassword = "$6$KsXM94WpuFhxSCjz$ci5yTkLvgsOtFbS/ARWWM6lsEjMBo4mKxUuwDxQ3K3LEwU9d/SY0uA.GlCDqulDWOfC0KzTgejqhbvXPlMS6c.";
         };
       };
 
@@ -169,29 +147,35 @@
         coolercontrol.coolercontrol-ui-data
 
         pinentry-gnome3
-        sbctl
 
-        bitwarden-desktop
         brave
         discord
-        element-desktop
         gnumake
-        gopass
         gpg-tui
-        grimblast
-        jmeter
+        insomnia
         just
         libreoffice-qt
         prismlauncher
-        qbittorrent
-        reaper
-        spotify
         telegram-desktop
         tor-browser
         usbutils
-        via
-        woeusb
+        jetbrains.idea
+        mariadb
+        obsidian
+        obs-studio
+        google-chrome
+        gcc
+        zoom-us
+        maven
+        gh
+        wireguard-tools
+        php
+        phpPackages.composer
+        drawing
+        sing-box
       ];
+
+      programs.amnezia-vpn.enable = true;
 
       programs.throne = {
         enable = true;

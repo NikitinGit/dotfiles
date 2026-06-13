@@ -9,10 +9,6 @@
         autosuggestion.enable = true;
         syntaxHighlighting.enable = true;
 
-        sessionVariables = {
-
-        };
-
         oh-my-zsh = {
           enable = true;
           plugins = [
@@ -20,11 +16,8 @@
             "git"
             "golang"
             "gradle"
-            "helm"
             "kubectl"
-            "macos"
             "npm"
-            "podman"
             "rust"
             "ssh"
             "systemd"

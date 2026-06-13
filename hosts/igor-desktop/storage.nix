@@ -1,33 +1,10 @@
-{
-  config,
-  lib,
-  pkgs,
-  modulesPath,
-  ...
-}:
+{ ... }:
 
 {
-  imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
-
-  boot.initrd.availableKernelModules = [
-    "nvme"
-    "xhci_pci"
-    "ahci"
-    "usbhid"
-  ];
-  boot.initrd.kernelModules = [ ];
-  boot.kernelModules = [ "kvm-amd" ];
-  boot.extraModulePackages = [ ];
-
-  networking.useDHCP = lib.mkDefault true;
-
-  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
-
   disko.devices = {
     disk.main = {
       type = "disk";
-      device = lib.mkDefault "/dev/nvme0n1";
+      device = "/dev/nvme0n1";
       content = {
         type = "gpt";
         partitions = {
@@ -46,42 +23,36 @@
           root = {
             size = "100%";
             content = {
-              type = "luks";
-              name = "cryptroot";
-              settings.allowDiscards = true;
-              settings.crypttabExtraOpts = [ "tpm2-device=auto" ];
-              content = {
-                type = "btrfs";
-                extraArgs = [ "-f" ];
-                subvolumes = {
-                  "@root" = {
-                    mountpoint = "/";
-                    mountOptions = [
-                      "compress=zstd"
-                      "noatime"
-                    ];
-                  };
-                  "@home" = {
-                    mountpoint = "/home";
-                    mountOptions = [
-                      "compress=zstd"
-                      "noatime"
-                    ];
-                  };
-                  "@persist" = {
-                    mountpoint = "/persist";
-                    mountOptions = [
-                      "compress=zstd"
-                      "noatime"
-                    ];
-                  };
-                  "@nix" = {
-                    mountpoint = "/nix";
-                    mountOptions = [
-                      "compress=zstd"
-                      "noatime"
-                    ];
-                  };
+              type = "btrfs";
+              extraArgs = [ "-f" ];
+              subvolumes = {
+                "@root" = {
+                  mountpoint = "/";
+                  mountOptions = [
+                    "compress=zstd"
+                    "noatime"
+                  ];
+                };
+                "@home" = {
+                  mountpoint = "/home";
+                  mountOptions = [
+                    "compress=zstd"
+                    "noatime"
+                  ];
+                };
+                "@persist" = {
+                  mountpoint = "/persist";
+                  mountOptions = [
+                    "compress=zstd"
+                    "noatime"
+                  ];
+                };
+                "@nix" = {
+                  mountpoint = "/nix";
+                  mountOptions = [
+                    "compress=zstd"
+                    "noatime"
+                  ];
                 };
               };
             };
@@ -96,19 +67,14 @@
   boot.initrd.systemd.services.rollback = {
     description = "Rollback BTRFS root subvolume to a pristine state";
     wantedBy = [ "initrd.target" ];
+    after = [ "dev-disk-by\\x2dpartlabel-disk\\x2dmain\\x2droot.device" ];
+    requires = [ "dev-disk-by\\x2dpartlabel-disk\\x2dmain\\x2droot.device" ];
     before = [ "sysroot.mount" ];
     unitConfig.DefaultDependencies = "no";
     serviceConfig.Type = "oneshot";
     script = ''
-      for i in {1..20}; do
-        if [ -b /dev/mapper/cryptroot ]; then
-          break
-        fi
-        sleep 0.1
-      done
-
       mkdir -p /btrfs_tmp
-      mount -t btrfs -o subvol=/ /dev/mapper/cryptroot /btrfs_tmp
+      mount -t btrfs -o subvol=/ /dev/disk/by-partlabel/disk-main-root /btrfs_tmp
 
       if [[ -e /btrfs_tmp/@root ]]; then
           mkdir -p /btrfs_tmp/old_roots
@@ -148,12 +114,15 @@
         "/var/lib/bluetooth"
         "/var/lib/nixos"
         "/var/lib/systemd/coredump"
-        "/var/lib/sbctl"
         "/etc/NetworkManager/system-connections"
         "/etc/nixos"
         "/var/lib/AccountsService"
         "/var/lib/NetworkManager"
         "/var/lib/sudo"
+        "/var/lib/docker"
+        "/var/lib/containers"
+        "/var/lib/coolercontrol"
+        "/etc/coolercontrol"
         {
           directory = "/var/lib/colord";
           user = "colord";
@@ -185,13 +154,6 @@
           file = "/etc/ssh/ssh_host_ed25519_key.pub";
           how = "symlink";
           configureParent = true;
-        }
-        {
-          file = "/var/keys/secret_file";
-          configureParent = true;
-          parent = {
-            mode = "0700";
-          };
         }
       ];
     };

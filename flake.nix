@@ -2,7 +2,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
-    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-26.05";
 
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
 
@@ -12,16 +12,9 @@
     };
 
     home-manager-stable = {
-      url = "github:nix-community/home-manager/release-25.11";
+      url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs-stable";
     };
-
-    nix-darwin = {
-      url = "github:LnL7/nix-darwin/master";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
 
     stylix = {
       url = "github:danth/stylix";
@@ -33,12 +26,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    preservation.url = "github:nix-community/preservation";
+    nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
 
-    sops-nix = {
-      url = "github:Mic92/sops-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    preservation.url = "github:nix-community/preservation";
 
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
@@ -48,16 +38,6 @@
     lanzaboote = {
       url = "github:nix-community/lanzaboote/v1.0.0";
       inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    colmena = {
-      url = "github:zhaofengli/colmena";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    portfolio = {
-      url = "github:dfjay/dfjay.com";
-      flake = false;
     };
 
     flake-parts = {
@@ -75,9 +55,7 @@
       ];
 
       imports = [
-        ./hosts/darwin.nix
         ./hosts/nixos.nix
-        ./hosts/router/flake-module.nix
       ];
 
       perSystem =

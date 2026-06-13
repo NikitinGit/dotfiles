@@ -37,9 +37,7 @@ let
           {
             system.stateVersion = nixosStateVersion;
             nixpkgs.config.allowUnfree = true;
-            nixpkgs.overlays = [
-              inputs.nix-vscode-extensions.overlays.default
-            ]
+            nixpkgs.overlays = []
             ++ (import ../overlays);
 
             nix = {
@@ -60,12 +58,10 @@ let
           inputs.stylix.nixosModules.stylix
           inputs.disko.nixosModules.disko
           inputs.preservation.nixosModules.preservation
-          inputs.sops-nix.nixosModules.sops
           inputs.lanzaboote.nixosModules.lanzaboote
           home-manager.nixosModules.home-manager
           {
             home-manager.sharedModules = [
-              inputs.sops-nix.homeManagerModules.sops
               inputs.nix-index-database.homeModules.nix-index
             ];
             home-manager.useGlobalPkgs = true;
@@ -88,9 +84,7 @@ let
       };
     };
 
-  gandi-vps = import ./gandi-vps { inherit modules; };
-  linode-vps = import ./linode-vps { inherit modules; };
-  desktop = import ./dfjay-desktop { inherit modules; };
+  igor-desktop = import ./igor-desktop { inherit modules; };
 
 in
 {
@@ -104,29 +98,11 @@ in
         nodeNixpkgs = builtins.mapAttrs (name: value: value.pkgs) conf;
         nodeSpecialArgs = builtins.mapAttrs (name: value: value._module.specialArgs) conf;
       };
-
-      gandi-vps = {
-        deployment = {
-          targetHost = gandi-vps.colmena.targetHost;
-          targetUser = gandi-vps.colmena.targetUser;
-          buildOnTarget = true;
-        };
-        imports = conf.gandi-vps._module.args.modules;
-      };
-
-      linode-vps = {
-        deployment = {
-          targetHost = linode-vps.colmena.targetHost;
-          targetUser = linode-vps.colmena.targetUser;
-          buildOnTarget = true;
-        };
-        imports = conf.linode-vps._module.args.modules;
-      };
     };
 
   imports = [
     (mkNixosConfiguration {
-      inherit (gandi-vps)
+      inherit (igor-desktop)
         host
         system
         user
@@ -135,38 +111,8 @@ in
         nixosStateVersion
         homeStateVersion
         ;
-      hostModules = gandi-vps.modules;
-      hostConfig = gandi-vps.config;
-      nixpkgs = inputs.nixpkgs-stable;
-      home-manager = inputs.home-manager-stable;
-    })
-    (mkNixosConfiguration {
-      inherit (linode-vps)
-        host
-        system
-        user
-        useremail
-        userdesc
-        nixosStateVersion
-        homeStateVersion
-        ;
-      hostModules = linode-vps.modules;
-      hostConfig = linode-vps.config;
-      nixpkgs = inputs.nixpkgs-stable;
-      home-manager = inputs.home-manager-stable;
-    })
-    (mkNixosConfiguration {
-      inherit (desktop)
-        host
-        system
-        user
-        useremail
-        userdesc
-        nixosStateVersion
-        homeStateVersion
-        ;
-      hostModules = desktop.modules;
-      hostConfig = desktop.config;
+      hostModules = igor-desktop.modules;
+      hostConfig = igor-desktop.config;
     })
   ];
 }

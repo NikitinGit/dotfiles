@@ -18,6 +18,14 @@ gc:
 gcroot:
   ls -al /nix/var/nix/gcroots/auto/
 
+# Regenerate facter.json for the current host
+# Usage: just facter igor-desktop
+[group('nix')]
+facter host:
+  sudo nix run github:numtide/nixos-facter -- -o hosts/{{host}}/facter.json
+  sudo chown $(id -u):$(id -g) hosts/{{host}}/facter.json
+  @echo "✓ hosts/{{host}}/facter.json updated"
+
 # Build OpenWrt sysupgrade image for GL-MT6000
 [group('router')]
 router-build:

@@ -38,7 +38,7 @@ let
     in
     fileModules // dirModules;
 
-  # Extract specific module type (homeModule, darwinModule, nixosModule) from collected modules
+  # Extract specific module type (homeModule, nixosModule) from collected modules
   # Flattens nested structure for easier use
   extractModuleType =
     type: modules:
@@ -66,9 +66,6 @@ in
   # Helper to get list of module attrs for a specific type
   getHomeModules =
     moduleList: map (m: m.homeModule) (builtins.filter (hasAttr "homeModule") moduleList);
-
-  getDarwinModules =
-    moduleList: map (m: m.darwinModule) (builtins.filter (hasAttr "darwinModule") moduleList);
 
   getNixosModules =
     moduleList: map (m: m.nixosModule) (builtins.filter (hasAttr "nixosModule") moduleList);
