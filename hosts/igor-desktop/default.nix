@@ -19,6 +19,7 @@
     shell.zsh
     stylix
 
+    alarm
     claude
     bat
     btop
