@@ -54,6 +54,11 @@
                     "noatime"
                   ];
                 };
+                "@swap" = {
+                  mountpoint = "/swap";
+                  swap.swapfile.size = "8G";
+                  mountOptions = [ "noatime" ];
+                };
               };
             };
           };
@@ -90,7 +95,7 @@
           btrfs subvolume delete "$1"
       }
 
-      for i in $(find /btrfs_tmp/old_roots/ -maxdepth 1 -mtime +30); do
+      for i in $(find /btrfs_tmp/old_roots/ -maxdepth 1 -mtime +7); do
           delete_subvolume_recursively "$i"
       done
 
@@ -98,13 +103,6 @@
       umount /btrfs_tmp
     '';
   };
-
-  swapDevices = [
-    {
-      device = "/var/lib/swapfile";
-      size = 8 * 1024;
-    }
-  ];
 
   preservation = {
     enable = true;

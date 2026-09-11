@@ -114,6 +114,29 @@
         initrd.systemd.enable = true;
         kernelPackages = pkgs.linuxPackages_zen;
         kernel.sysctl."kernel.sysrq" = 1;
+
+        # Super I/O материнки (NCT6798D на PRIME Z690-A): обороты вентиляторов
+        # и напряжения. Без этого CoolerControl не видит кулеры вообще.
+        kernelModules = [ "nct6775" ];
+        kernelParams = [ "acpi_enforce_resources=lax" ];
+      };
+
+      # ВРЕМЕННО: режем лимиты мощности CPU со штатных 125/181 Вт.
+      # Причина: под нагрузкой процессор упирается в TjMax 100 C за 5 секунд
+      # при исправно работающем вентиляторе (fan2 разгоняется до 2160 RPM),
+      # то есть отказал термоинтерфейс. Снять после переборки охлаждения.
+      systemd.services.cpu-power-limit = {
+        description = "Ограничение PL1/PL2 процессора";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "sysinit.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        script = ''
+          echo 95000000  > /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw
+          echo 110000000 > /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
+        '';
       };
 
       home-manager.users.${username} = {
