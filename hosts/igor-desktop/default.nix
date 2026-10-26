@@ -109,6 +109,7 @@
       boot = {
         loader = {
           systemd-boot.enable = true;
+          systemd-boot.memtest86.enable = true; # ВРЕМЕННО: проверка памяти из меню загрузки
           efi.canTouchEfiVariables = true;
         };
         initrd.systemd.enable = true;
@@ -118,7 +119,77 @@
         # Super I/O материнки (NCT6798D на PRIME Z690-A): обороты вентиляторов
         # и напряжения. Без этого CoolerControl не видит кулеры вообще.
         kernelModules = [ "nct6775" ];
-        kernelParams = [ "acpi_enforce_resources=lax" ];
+        kernelParams = [
+          "acpi_enforce_resources=lax"
+
+          # ВРЕМЕННО: отключаем энергосбережение шины PCIe и глубокие состояния
+          # простоя процессора. Windows задействует их куда осторожнее, а на
+          # этой машине зависания случаются в том числе в полном простое.
+          "pcie_aspm=off"
+          "intel_idle.max_cstate=1"
+
+          # Диск Patriot P400 отваливался в простое (systemd: "Failed to spawn
+          # executor: Input/output error"). Запрещаем NVMe уходить в глубокие
+          # состояния сна.
+          "nvme_core.default_ps_max_latency_us=0"
+
+          # Запрещаем диску одалживать системную память под свою таблицу
+          # адресов (HMB). Было 128 МБ в 32 сегментах — способ выделения в
+          # Linux отличается от Windows, под который отлажена прошивка.
+          # Последний непроверенный механизм. Снять после замены накопителя.
+          "nvme.max_host_mem_size_mb=0"
+
+          # Диагностика: превращаем oops и зависания в панику, чтобы ядро
+          # сбросило отчёт в pstore. panic=0 — не перезагружаться, текст
+          # остаётся на экране для фото.
+          "oops=panic"
+          "softlockup_panic=1"
+          "nmi_watchdog=panic"
+          "panic=0"
+        ];
+      };
+
+      # ВРЕМЕННО: режем потолок мощности видеокарты со 160 до 120 Вт.
+      # Причина: диск отвалился с шины PCIe ровно в тот момент, когда GPU
+      # потребляла 159.46 Вт из 160. Проверяем версию с просадкой питания.
+      systemd.services.gpu-power-limit = {
+        description = "Ограничение мощности видеокарты";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "systemd-modules-load.service" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          # "-" в начале: не валить активацию, если драйвер в ядре и nvidia-smi
+          # разошлись в версиях после обновления (лечится перезагрузкой).
+          ExecStart = "-/run/current-system/sw/bin/nvidia-smi -pl 120";
+        };
+      };
+
+      # ВРЕМЕННО, диагностика зависаний: раз в 30 с пишем в журнал состояние
+      # видеокарты, процессора и давление подсистем (PSI). Зависает графика,
+      # а ядро и systemd живут — значит журнал сохранит последние показания.
+      systemd.services.hw-sampler = {
+        description = "Сбор показаний железа для диагностики зависаний";
+        wantedBy = [ "multi-user.target" ];
+        path = [ pkgs.lm_sensors pkgs.coreutils pkgs.gawk ];
+        serviceConfig = {
+          Restart = "always";
+          RestartSec = 10;
+        };
+        script = ''
+          while true; do
+            gpu=$(/run/current-system/sw/bin/nvidia-smi --query-gpu=utilization.gpu,memory.used,temperature.gpu,power.draw,clocks_event_reasons.hw_slowdown --format=csv,noheader,nounits 2>/dev/null | tr -d " ")
+            cpu=$(sensors 2>/dev/null | awk '/Package id 0/{print $4}')
+            fan=$(sensors 2>/dev/null | awk '/^fan2:/{print $2}')
+            load=$(cut -d" " -f1-3 /proc/loadavg)
+            mem=$(awk '/MemAvailable/{printf "%.1fG", $2/1048576}' /proc/meminfo)
+            psi_io=$(awk '/^some/{print $2}' /proc/pressure/io)
+            psi_cpu=$(awk '/^some/{print $2}' /proc/pressure/cpu)
+            psi_mem=$(awk '/^some/{print $2}' /proc/pressure/memory)
+            echo "HW gpu=$gpu cpu=$cpu fan2=$fan load=$load memfree=$mem io=$psi_io cpu_psi=$psi_cpu mem_psi=$psi_mem"
+            sleep 30
+          done
+        '';
       };
 
       # ВРЕМЕННО: режем лимиты мощности CPU со штатных 125/181 Вт.
