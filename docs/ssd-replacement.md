@@ -53,7 +53,7 @@
 
 | Подтом | Что внутри | Копировать |
 | --- | --- | --- |
-| `@home` | 344 ГБ, из них 283 ГБ игры Steam | Да, без Steam — ~61 ГБ |
+| `@home` | 344 ГБ, из них 281 ГБ — файлы игр в `Steam/steamapps` | Да, без игр и кэша — ~40 ГБ |
 | `@persist` | Тома Docker с MySQL, настройки сети, ключи SSH, machine-id, логи | Да, целиком |
 | `@root` | Стирается при загрузке | Нет |
 | `@nix`, `/boot` | Пересобираются из flake | Нет |
@@ -102,11 +102,23 @@
 
        mkdir -p /old
        mount -o ro,subvol=@home /dev/disk/by-id/nvme-Patriot_M.2_P400_1024GB_P400DFBA22111410288-part2 /old
-       rsync -aHAX --partial --info=progress2 --exclude='igor/.local/share/Steam' /old/ /mnt/home/
+       rsync -aHAX --partial --info=progress2 \
+           --exclude='igor/.local/share/Steam/steamapps' \
+           --exclude='igor/.cache' \
+           --exclude='igor/java_error_in_idea.hprof' \
+           /old/ /mnt/home/
        umount /old
        mount -o ro,subvol=@persist /dev/disk/by-id/nvme-Patriot_M.2_P400_1024GB_P400DFBA22111410288-part2 /old
        rsync -aHAX --partial --info=progress2 /old/ /mnt/persist/
        umount /old
+
+   Исключается только `steamapps` — сами файлы игр. Каталоги `userdata`
+   (сохранения) и `config` (вход в аккаунт) копируются: они маленькие, но
+   потерять их обидно. Также пропускаем `.cache` (20 ГБ, пересоздаётся сам) и
+   дамп падения IntelliJ на 2,8 ГБ.
+
+   Всё остальное в `/home` переносится как есть: ключи SSH из `~/.ssh`,
+   история команд `~/.zsh_history`, настройки IDE, проекты.
 
    Если старый диск отвалится посреди копирования — перезагрузиться с флешки и
    повторить шаги 7 (только `--mode mount`, не `destroy`) и 8. `rsync`
