@@ -2,9 +2,9 @@
 
 {
   disko.devices = {
-    disk.main = {
+    disk.kingston = {
       type = "disk";
-      device = "/dev/nvme0n1";
+      device = "/dev/disk/by-id/nvme-KINGSTON_SFYRSK1000G_50026B7283B26CAB";
       content = {
         type = "gpt";
         partitions = {
@@ -72,14 +72,14 @@
   boot.initrd.systemd.services.rollback = {
     description = "Rollback BTRFS root subvolume to a pristine state";
     wantedBy = [ "initrd.target" ];
-    after = [ "dev-disk-by\\x2dpartlabel-disk\\x2dmain\\x2droot.device" ];
-    requires = [ "dev-disk-by\\x2dpartlabel-disk\\x2dmain\\x2droot.device" ];
+    after = [ "dev-disk-by\\x2dpartlabel-disk\\x2dkingston\\x2droot.device" ];
+    requires = [ "dev-disk-by\\x2dpartlabel-disk\\x2dkingston\\x2droot.device" ];
     before = [ "sysroot.mount" ];
     unitConfig.DefaultDependencies = "no";
     serviceConfig.Type = "oneshot";
     script = ''
       mkdir -p /btrfs_tmp
-      mount -t btrfs -o subvol=/ /dev/disk/by-partlabel/disk-main-root /btrfs_tmp
+      mount -t btrfs -o subvol=/ /dev/disk/by-partlabel/disk-kingston-root /btrfs_tmp
 
       if [[ -e /btrfs_tmp/@root ]]; then
           mkdir -p /btrfs_tmp/old_roots
